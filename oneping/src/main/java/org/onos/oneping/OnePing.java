@@ -22,7 +22,10 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.Ethernet;
+//import org.onlab.packet.IPacket;
+//import org.onlab.packet.IPacket;
 import org.onlab.packet.IPv4;
+import org.onlab.packet.Ip4Address;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -73,9 +76,9 @@ public class OnePing {
     private static final String MSG_PING_REENABLED =
             "Careful next time, Vasili! Re-enabled ping from {} to {} on {}";
 
-    private static final int PRIORITY = 128;
-    private static final int DROP_PRIORITY = 129;
-    private static final int TIMEOUT_SEC = 60; // seconds
+    private static final int PRIORITY = 40001;
+    private static final int DROP_PRIORITY = 40002;
+    private static final int TIMEOUT_SEC = 20; // seconds
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -90,6 +93,7 @@ public class OnePing {
     protected PacketService packetService;
 
     private ApplicationId appId;
+
     private final PacketProcessor packetProcessor = new PingPacketProcessor();
     private final FlowRuleListener flowListener = new InternalFlowListener();
 
@@ -104,6 +108,10 @@ public class OnePing {
 
     @Activate
     public void activate() {
+//        ApplicationId appId2;
+//        Short id = 1;
+//        appId2 = coreService.getAppId(id);
+//        flowRuleService.removeFlowRulesById(appId2);
         appId = coreService.registerApplication("org.onosproject.oneping",
                                                 () -> log.info("Periscope down."));
         packetService.addProcessor(packetProcessor, PRIORITY);
@@ -133,7 +141,7 @@ public class OnePing {
             // Two pings detected; ban further pings and block packet-out
             log.warn(MSG_PINGED_TWICE, src, dst, deviceId);
             banPings(deviceId, src, dst);
-            context.block();
+            //context.block();
         } else {
             // One ping detected; track it for the next minute
             log.info(MSG_PINGED_ONCE, src, dst, deviceId);
@@ -144,15 +152,19 @@ public class OnePing {
 
     // Installs a temporary drop rule for the ICMP pings between given srd/dst.
     private void banPings(DeviceId deviceId, MacAddress src, MacAddress dst) {
+        MacAddress target = MacAddress.valueOf("00:0c:29:60:dd:01");
+        Ip4Address ip4 = Ip4Address.valueOf("10.10.0.1");
         TrafficSelector selector = DefaultTrafficSelector.builder()
                 .matchEthSrc(src).matchEthDst(dst).build();
         TrafficTreatment drop = DefaultTrafficTreatment.builder()
-                .drop().build();
+                .drop().build(); //Agrega NO_ACTION en caso de drop
+        TrafficTreatment test = DefaultTrafficTreatment.builder().setIpDst(ip4).setEthDst(target).build();
 
+        log.info("NUEVO FLOW AGREGADO");
         flowObjectiveService.forward(deviceId, DefaultForwardingObjective.builder()
                 .fromApp(appId)
                 .withSelector(selector)
-                .withTreatment(drop)
+                .withTreatment(test)
                 .withFlag(ForwardingObjective.Flag.VERSATILE)
                 .withPriority(DROP_PRIORITY)
                 .makeTemporary(TIMEOUT_SEC)
