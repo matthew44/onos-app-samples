@@ -30,6 +30,7 @@ import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.DeviceId;
+import org.onosproject.net.PortNumber;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRule;
@@ -152,13 +153,15 @@ public class OnePing {
 
     // Installs a temporary drop rule for the ICMP pings between given srd/dst.
     private void banPings(DeviceId deviceId, MacAddress src, MacAddress dst) {
-        MacAddress target = MacAddress.valueOf("00:0c:29:60:dd:01");
-        Ip4Address ip4 = Ip4Address.valueOf("10.10.0.1");
+        MacAddress target = MacAddress.valueOf("06:30:51:F1:82:CD");
+        PortNumber numport = PortNumber.portNumber(1);
+        Ip4Address ip4 = Ip4Address.valueOf("10.0.0.1");
         TrafficSelector selector = DefaultTrafficSelector.builder()
                 .matchEthSrc(src).matchEthDst(dst).build();
         TrafficTreatment drop = DefaultTrafficTreatment.builder()
                 .drop().build(); //Agrega NO_ACTION en caso de drop
-        TrafficTreatment test = DefaultTrafficTreatment.builder().setIpDst(ip4).setEthDst(target).build();
+        TrafficTreatment test = DefaultTrafficTreatment.builder().setIpDst(ip4).setEthDst(target).setOutput(numport)
+                .build();
 
         log.info("NUEVO FLOW AGREGADO");
         flowObjectiveService.forward(deviceId, DefaultForwardingObjective.builder()
